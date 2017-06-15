@@ -1,0 +1,85 @@
+#!/bin/bash
+
+bindir=$( (cd -P $(dirname $0) && pwd) )
+dir=$( (cd -P $(dirname $0)/.. && pwd) )
+tmpdir=$( (cd -P $dir/tmp && pwd) )
+
+function Usage ()
+{
+    echo "Usage: $0 [-v] [-o outputfilename] <path_to_pdf_file> <id>" 1>&2
+    echo "       -v   verbose output" 1>&2
+    echo "       -o   name of file to write to (default is write to stdout) " 1>&2
+}
+
+function Verbose ()
+{
+    if [ "$verbose" == "1" ]
+    then
+        echo $1 1>&2
+    fi
+}
+
+verbose=0
+resolution=300
+while getopts :vr: opt
+ do
+      case $opt in
+          v) verbose=1;;
+          ?) Usage
+             exit 1;;
+      esac
+done
+
+shift $((OPTIND-1))
+
+if [[ "$1" == "" || ! -f "$1" ]]
+then
+    Usage
+    exit 0
+fi
+
+if [[ "$2" == "" ]]
+then
+    Usage
+    exit 0
+fi
+
+pdffile=$1
+id=$2
+
+ispdf=`file -L $pdffile | egrep "PDF document" | wc -l | awk '{print $1}'`
+if [ "$ispdf" == "0" ]
+then
+    echo "Error: content file must really be in PDF format" 1>&2
+    exit 2
+fi
+
+pdfbase=`basename $pdffile`
+pdfbase2=`basename $pdffile .pdf`
+pdfdir=`dirname $pdffile`
+
+
+txtfile=`$bindir/gettextfrompdf_poppler $pdffile`
+
+abstract=`$bindir/getabstractfromtext_poppler $txtfile`
+if [[ "$abstract" != "" ]] ; then
+    abstract="$abstract"$'\n'$'\n'"Note: Abstract extracted from PDF file via OCR." 
+fi
+
+#echo "$bindir/getadvisorfromtext $txtfile"
+advisors_xml_file=`$bindir/getadvisorfromtext $txtfile`
+#echo $advisors_xml_file
+#cat $advisors_xml_file
+
+language=`$bindir/getlangfromtext $txtfile`
+
+#barcode=`echo $pdfbase2 | sed -e 's/[^3X]*\([X3][0-9]*\)[^0-9]\?.*$/\1/'`
+#barcode=`echo $pdfbase2 | cut -c 1-10`
+
+#Verbose "barcode= $barcode" 1>&2
+Verbose "abstract= $abstract" 1>&2
+Verbose "advisors_xml= "`cat $advisors_xml_file` 1>&2
+Verbose "language= $language" 1>&2
+$bindir/getmodsfromid "$id" "$pdfbase" "$abstract" "$advisors_xml_file" "$language"
+
+

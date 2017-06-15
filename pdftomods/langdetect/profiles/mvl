@@ -1,0 +1,6 @@
+#!/bin/bash
+
+code2=$1
+code3=$2
+
+cat $1 | sed -e 's/"'"$code2"'"}$/"'"$code3"'"}/' > ../newprofiles/$code3

@@ -1,0 +1,50 @@
+#!/bin/bash
+
+bindir=$( (cd -P $(dirname $0) && pwd) )
+dir=$( (cd -P $(dirname $0)/.. && pwd) )
+
+function Usage () 
+{
+    echo "Usage: $0 [-v] [-o outputfilename] <path_to_pdf_file>" 1>&2
+    echo "       -v   verbose output" 1>&2
+    echo "       -o   name of file to write to (default is write to stdout) " 1>&2
+}
+
+function Verbose ()
+{
+    if [ "$verbose" == "1" ] 
+    then 
+        echo $1 1>&2
+    fi
+}
+
+while getopts :v opt
+ do
+      case $opt in
+          v) verbose=1;;
+          ?) Usage
+             exit 1;;
+      esac
+done
+
+shift $((OPTIND-1))
+
+if [[ "$1" == "" || ! -f "$1" ]]
+then
+    Usage
+    exit 0
+fi
+
+tmptxtfile=$1
+response=`java -jar $bindir/langdetect/lib/langdetect.jar --detectlang  -d $bindir/langdetect/newprofiles/ $tmptxtfile`
+lang=`echo $response | sed -e 's/[^:]*:.\([^:]*\):.*/\1/'`
+value=`echo $response | sed -e 's/[^:]*:[^:]*:\([0-9.]*\).*/\1/'`
+if [[ "$lang" != "" && "$value" != "" ]]
+then
+    valuetest=`echo "$value"'>0.95' | bc -l`
+    if [[ "$valuetest" == "1" ]]
+    then
+        echo $lang
+    fi
+fi
+

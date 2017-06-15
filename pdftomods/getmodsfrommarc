@@ -1,0 +1,199 @@
+#!/bin/bash
+
+
+create_mods_file () {
+    echo '<?xml version="1.0" encoding="UTF-8" standalone="no"?>'
+    echo '<mods version="3.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" xmlns="http://www.loc.gov/mods/v3" xmlns:etd="http://www.ntltd.org/standards/metadata/etdms/1.0/etdms.xsd">'
+    echo '  <titleInfo lang="">'
+    echo '    <title>'"$title"'</title>'
+    echo '  </titleInfo>'
+    echo '  <name type="personal">'
+    if [[ "$middle" != "" ]] 
+    then
+        echo '    <namePart type="given">'"$first $middle"'</namePart>'
+    else
+        echo '    <namePart type="given">'"$first"'</namePart>'
+    fi
+    #echo '    <namePart type="given">'"$first"'</namePart>'
+    #if [[ "$middle" != "" ]] 
+    #then
+        #echo '    <namePart type="given">'"$middle"'</namePart>'
+    #fi
+    echo '    <namePart type="family">'"$last"'</namePart>'
+    echo '    <namePart>none</namePart>'
+    echo '    <affiliation>University of Virginia</affiliation>'
+    echo '    <description>'"$department"'</description>'
+    echo '    <role>'
+    echo '      <roleTerm authority="marcrelator" type="code">aut</roleTerm>'
+    echo '      <roleTerm authority="marcrelator" type="text">author</roleTerm>'
+    echo '    </role>'
+    echo '  </name>'
+    if [[ -e "$advisorxmlfile" ]] ; then
+        cat "$advisorxmlfile"
+    fi
+    echo '  <extension>'
+    echo '  <etd:degree>'
+    echo '    <etd:name>'"$doc_type"'</etd:name>'
+    echo '    <etd:level>'"$degree"'</etd:level>'
+    echo '    <etd:discipline>'"$discipline"'</etd:discipline>'
+    echo '  </etd:degree>'
+    echo '  </extension>'
+    echo '  <typeOfResource>text</typeOfResource>'
+    echo '  <language><languageTerm authority="iso639-2b" type="code">'"$language"'</languageTerm></language>'
+    if [[ "$abstract" == "" ]] ; then
+        echo '  <abstract>No abstract found</abstract>'
+    else
+        echo '  <abstract>'"$abstract"'</abstract>'
+    fi
+    echo '  <relatedItem type="host">'
+    echo '    <originInfo>'
+    echo '      <dateIssued encoding="iso8601">'"$degree_date"'</dateIssued>'
+    echo '      <dateOther/>'
+    echo '    </originInfo>'
+    echo '    <identifier type="local">'"$fname"'</identifier>'
+    echo '  </relatedItem>'
+if [[ "${#subjects[@]}" != "0" ]]; then
+    echo '  <subject>'
+    for topic in "${subjects[@]}"
+    do
+    topical=`strip_variable $topic`
+    echo '    <topic>'"$topical"'</topic>' 
+    done
+    echo '  </subject>'
+else
+    echo '  <subject>'
+    echo '    <topic>ILLIngest</topic>'
+    echo '  </subject>'
+fi
+    #echo '  <subject>'
+    #echo '    <topic>JTIngest</topic>'
+#if [[ "${#subjects[@]}" != "0" ]]; then
+    #for topic in "${subjects[@]}"
+    #do
+    #echo '    <topic>'"$topic"'</topic>' 
+    #done
+#fi
+    #echo '  </subject>'
+    if [[ "$note" != "" ]] ; then
+        echo '  <note>'"$note"'</note>'
+    fi
+    echo '</mods>'
+}
+
+strip_variable () {
+    var=$1
+    echo $var | sed -e 's/^"\(.*\)"$/\1/' -e 's/""/"/g' | sed -e 's/&/\&amp;/g' | sed -e 's/</\&lt;/g' 
+}
+
+#u4512274 : 502field = Thesis (Ph. D.)--University of Virginia, 2007.
+#u4512274 : 999field = Diss. Relig. Studies 2007 .J33
+#u4512274 : 999field = XX(4512274.3)
+#u4512274 : author_first = Sarah Hieatt
+#u4512274 : author_last = Jacoby
+#u4512274 : date = 2007
+#u4512274 : degree_discipline = Religious Studies
+#u4512274 : degree_level1 = PHD
+#u4512274 : degree_level2 = Ph. D.
+#u4512274 : degree_name1 = Dissertation
+#u4512274 : degree_name2 = Dissertation
+#u4512274 : department = Department of Religious Studies
+#u4512274 : id = u4512274
+#u4512274 : title = Consorts and revelations in Eastern Tibet : the auto/biographical writings of the Treasure revealer Sera Khandro (1892-1940)
+
+IFS='@'
+
+degree_name1=
+degree_name2=
+degree_level=
+degree_level=
+language=
+doc_type="Unknown Thesis"
+subject_cnt=0
+fname=$1
+abstract=$2
+abstract_from_marc=
+advisorxmlfile=$3
+language=$4
+note=$5
+
+while read field value
+do
+    if [[ "$field" == "title" ]] ; then 
+        title="$value"  
+    fi
+    if [[ "$field" = "author_first" ]] ; then 
+        first="$value"  
+    elif [[ "$field" = "author_last" ]] ; then 
+        last="$value"  
+    elif [[ "$field" = "language" ]] ; then 
+        language="$value"  
+    elif [[ "$field" = "department" ]] ; then 
+        department="$value"  
+    elif [[ "$field" = "date" ]] ; then 
+#        degree_date=`echo $value | sed -e 's/$/-01-01/'`
+        degree_date="$value"
+    elif [[ "$field" = "degree_discipline" ]] ; then
+        degree_discipline="$value"  
+    elif [[ "$field" = "degree_name1" ]] ; then 
+        degree_name1="$value"  
+    elif [[ "$field" = "degree_name2" ]] ; then 
+        degree_name2="$value"  
+    elif [[ "$field" = "degree_level1" ]] ; then 
+        degree_level1="$value"  
+    elif [[ "$field" = "abstract" ]] ; then 
+        abstract_from_marc="$abstract_from_marc""$value"" "  
+    elif [[ "$field" = "degree_level2" ]] ; then 
+        degree_level2="$value"  
+    elif [[ "$field" = "subject" ]] ; then 
+        subjects[$subject_cnt]="$value"
+        let subject_cnt=$subject_cnt+1
+    else
+        echo "field = $field" 1>&2
+        echo "value = $value" 1>&2
+    fi
+done
+        echo "title = $title"   1>&2
+        echo "first = $first"   1>&2
+        echo "last = $last"   1>&2
+        echo "department = $department"   1>&2
+        echo "degree_date = $degree_date" 1>&2
+        echo "degree_discipline = $degree_discpline"   1>&2
+        echo "degree_name1 = $degree_name1"   1>&2
+        echo "degree_name2 = $degree_name2"   1>&2
+        echo "degree_level1 = $degree_level1"   1>&2
+        echo "degree_level2 = $degree_level2"   1>&2
+        echo "abstract_from_marc" = $abstract_from_marc""   1>&2
+
+    if [[ "$abstract" == "" && "$abstract_from_marc" != "" ]] ; then
+        if [[ "$abstract_from_marc" != "Abstract not available. " ]] ; then 
+            abstract="$abstract_from_marc"
+        fi
+    fi 
+
+    title=`strip_variable $title`
+    department=`strip_variable $department`
+
+    if [[ "$degree_name1" == "Dissertation" || "$degree_name2" == "Dissertation" ]] ; then
+        doc_type="Doctoral Dissertation"
+    fi
+    if [[ "$degree_name1" =~ Masters.* || "$degree_name2" =~ Masters.* ]] ; then
+        doc_type="Masters Thesis"
+    fi
+    advisor_first=""
+    advisor_last="None Provided"
+
+    if [[ ! "$department" =~  .*[Dd]epartment.*  && ! "$department" =~ .*[Ss]chool.* ]]
+    then
+        department="Department of $department"
+    fi
+
+    discipline="$degree_discipline"
+
+    if [[ "$degree_level2" != "" ]];  then
+        degree=`echo "$degree_level2" | tr '[:lower:]' '[:upper:]' | sed -e 's/[. ]//g'`
+    else
+        degree=`echo "$degree_level1" | tr '[:lower:]' '[:upper:]' | sed -e 's/[. ]//g'`
+    fi
+
+    create_mods_file
+

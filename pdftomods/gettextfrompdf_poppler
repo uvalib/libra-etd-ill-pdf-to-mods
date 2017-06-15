@@ -1,0 +1,71 @@
+#!/bin/bash
+
+bindir=$( (cd -P $(dirname $0) && pwd) )
+dir=$( (cd -P $(dirname $0)/.. && pwd) )
+tmpdir=$( (cd -P $dir/tmp && pwd) )
+
+function Usage () 
+{
+    echo "Usage: $0 [-v] [-o outputfilename] <path_to_pdf_file>" 1>&2
+    echo "       -v   verbose output" 1>&2
+    echo "       -o   name of file to write to (default is write to stdout) " 1>&2
+}
+
+function Verbose ()
+{
+    if [ "$verbose" == "1" ] 
+    then 
+        echo $1 1>&2
+    fi
+}
+
+verbose=0
+resolution=300
+while getopts :vr: opt
+ do
+      case $opt in
+          v) verbose=1;;
+          r) resolution=$OPTARG;;
+          ?) Usage
+             exit 1;;
+      esac
+done
+
+shift $((OPTIND-1))
+
+if [[ "$1" == "" || ! -f "$1" ]]
+then
+    Usage
+    exit 0
+fi
+
+ispdf=`file -L $1 | egrep "PDF document" | wc -l | awk '{print $1}'`
+if [ "$ispdf" == "0" ]
+then
+    echo "Error: content file must be in PDF format" 1>&2
+    exit 2
+fi
+
+pdffile=$1
+pdfbase=`basename $pdffile`
+pdfbase2=`basename $pdffile .pdf`
+pdfdir=`dirname $pdffile`
+#=$pdfdir/tmp
+#if [ -w $pdfdir ]
+#then
+#    tmppdfdir=$pdfdir/tmp
+#    mkdir -p $tmppdfdir
+#else
+#    tmppdfdir=../tmp
+#fi
+tmptxtfile=$tmpdir/${pdfbase%.pdf}_poppler.txt
+
+rm -f $tmptxtfile
+
+if [[ ! -e $tmptxtfile || $pdffile -nt $tmptxtfile ]]
+then
+    #pdftotext -layout -f 1 -l 13 $pdffile -  | sed -e 's/^[ ][ ][ ]\+/#indent#/' -e 's/\f\f\?[ ]*...$/     /g' -e 's/[ ]\+/ /g' -e '/^[ ]*$/d' -e 's/^[ ]//' > $tmptxtfile
+    pdftotext -raw -f 1 -l 13 $pdffile -  | sed -e 's/^[ ][ ][ ]\+/#indent#/' -e 's/\f\f\?[ ]*...$/     /g' -e 's/[ ]\+/ /g' -e '/^[ ]*$/d' -e 's/^[ ]//' > $tmptxtfile
+fi
+
+echo $tmptxtfile

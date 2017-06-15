@@ -1,0 +1,83 @@
+#!/bin/bash
+
+txtfile=$1
+
+dir=$( (cd -P $(dirname $0)/.. && pwd) )
+tmpdir=$( (cd -P $dir/tmp && pwd) )
+
+txtbase=`basename $txtfile .txt`
+#txtdir=`dirname $txtfile`
+#tmpdir=$txtdir/tmp
+#mkdir -p $tmpdir
+
+advisorfile=$tmpdir/${txtbase}_advisors.txt
+advisorxml=$tmpdir/${txtbase}_advisors.xml
+
+#PERL=/opt/rh/perl516/root/usr/bin/perl
+PERL=perl
+
+create_mods_advisor () {
+    echo '  <name type="personal">'
+    if [[ "$middlename" != "" ]]
+    then
+        echo '    <namePart type="given">'"$firstname $middlename"'</namePart>'
+    else
+        echo '    <namePart type="given">'"$firstname"'</namePart>'
+    fi
+    echo '    <namePart type="family">'"$lastname"'</namePart>'
+    if [[ "$department" != "" ]]
+    then
+        echo '    <affiliation>University of Virginia</affiliation>'
+        echo '    <description>'"$department"'</description>'
+    fi
+    echo '    <role>'
+    echo '      <roleTerm authority="marcrelator" type="code">ths</roleTerm>'
+    echo '      <roleTerm authority="marcrelator" type="text">advisor</roleTerm>'
+    echo '    </role>'
+    echo '  </name>'
+}
+
+create_empty_advisor () {
+    echo '  <name type="personal">'
+    echo '    <namePart type="family">None Found</namePart>'
+    echo '    <role>'
+    echo '      <roleTerm authority="marcrelator" type="code">ths</roleTerm>'
+    echo '      <roleTerm authority="marcrelator" type="text">advisor</roleTerm>'
+    echo '    </role>'
+    echo '  </name>'
+}
+
+#echo "textfile=$txtfile" 
+
+cat $txtfile | sed -e 's/]/J/g' | 
+    sed -e '/^[ \t]*$/d' -e 's/[-] *$//' -e '/^.\{1,30\}$/a \\n' -e 's/\f/\n\f\n/' | 
+    $PERL -f sentence.pl | 
+    $PERL -f getadvisor.perl | 
+    egrep '^(Advis|Commi)' | 
+    sort | 
+    sed -e 's/[^:]*: //' |
+    $PERL -f distdiff.perl > $advisorfile
+
+if [[ ! -s $advisorfile ]] ; then
+    create_empty_advisor > $advisorxml
+else
+    cat $advisorfile | while read line
+    do  
+        firstname=`echo $line | sed -e 's/\([A-Z][^ ]*\) .*/\1/'` 
+       ## middlename=`echo $line | sed -e 's/[A-Z][^ ]* \([A-Z][^ ]* \).*/\1/'` 
+        middlename=`echo $line | sed -e 's/[A-Z][^ ]* \(\([A-Z][^ ]* \)*\)[A-Z][^ ]*$/\1/'`
+        lastname=`echo $line | sed -e 's/.* \([^ ]*\)/\1/'` 
+        #echo "first = $firstname"; 
+        #echo "middle = $middlename"; 
+        #echo "last = $lastname"; 
+        department=
+        ldapquery="(&(sn=$lastname)(givenName=$firstname)(eduPersonAffiliation=Faculty))"
+        department=`ldapsearch -LLL -H ldap://ldap.virginia.edu:389 -x -b "o=University of Virginia,c=US" -s sub "$ldapquery" | 
+            egrep uvaDisplayDepartment |
+            sed -e 's/uvaDisplayDepartment:[ ]*\(.*\)/\1/'`
+        #echo "department = $department"; 
+        create_mods_advisor
+    done > $advisorxml
+fi
+
+echo $advisorxml

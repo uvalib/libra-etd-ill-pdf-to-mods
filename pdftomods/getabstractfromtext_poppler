@@ -1,0 +1,64 @@
+#!/bin/bash
+
+bindir=$( (cd -P $(dirname $0) && pwd) )
+dir=$( (cd -P $(dirname $0)/.. && pwd) )
+tmpdir=$( (cd -P $dir/tmp && pwd) )
+
+function Usage () 
+{
+    echo "Usage: $0 [-v] [-o outputfilename] <path_to_txt_file>" 1>&2
+    echo "       -v   verbose output" 1>&2
+    echo "       -o   name of file to write to (default is write to stdout) " 1>&2
+}
+
+function Verbose ()
+{
+    if [ "$verbose" == "1" ] 
+    then 
+        echo $1 1>&2
+    fi
+}
+
+verbose=0
+while getopts :vr: opt
+ do
+      case $opt in
+          v) verbose=1;;
+          ?) Usage
+             exit 1;;
+      esac
+done
+
+shift $((OPTIND-1))
+
+if [[ "$1" == "" || ! -f "$1" ]]
+then
+    Usage
+    exit 0
+fi
+
+txtfile=$1
+txtbase=`basename $txtfile`
+txtbase2=`basename $txtfile .txt`
+#txtdir=`dirname $txtfile`
+#tmptxtdir=$txtdir
+tmpabstractfile=$tmpdir/${txtbase2}_abstract_poppler.txt
+
+cat $txtfile | perl -f $bindir/splitter.perl | sed -e 's/#indent#/\n\n/g' | awk 'length($0)>50 || length($0)==0' | sed -e 's/[.][^.]*$/./'  | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' > $tmpabstractfile
+
+if [[ ! -z $tmpabstractfile ]]
+then
+    dotlines=`cat $tmpabstractfile | egrep -l "[.][ ]?[.][ ]?[.][ ]?[.][ ]?[.]" | wc -l | awk '{print $1}'`
+    nonwords=`cat $tmpabstractfile | aspell --dict-dir $bindir/aspell6-en-7.1-0  -a | grep '&' | sed -e 's/^& \([^ ]*\) [0-9].*/\1/' | egrep -v '^[[:upper:]]' | sort | uniq | wc -l | awk '{print $1}'`
+    length=`cat $tmpabstractfile | wc -c | awk '{print $1}'`
+    if [[ "$dotlines" == "0" && "$nonwords" -lt "20" && $length -gt 100 ]]
+    then
+        #if [[ -e $tmpabstractfile.deleted ]]
+        #then
+        #    rm $tmpabstractfile.deleted
+        #fi
+        cat $tmpabstractfile
+    #else
+        #mv $tmpabstractfile $tmpabstractfile.deleted
+    fi
+fi

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+bindir=$( (cd -P $(dirname $0) && pwd) )
+dir=$( (cd -P $(dirname $0)/.. && pwd) )
+tmpdir=$( (cd -P $dir/tmp && pwd) )
+
+solrURL=http://libsvr40.lib.virginia.edu:8983/solr/bib
+
+id=$1
+fname=$2
+abstract=$3
+advisorxmlfile=$4
+language=$5
+#note="Digitization of this thesis was made possible by a generous grant from the Jefferson Trust, 2015."
+
+tmpfile=$tmpdir/${id}_index_out.txt
+
+$bindir/getfromsolr "$solrURL" id:"$id" | $bindir/indextest jeffersontrust.properties | tee "$tmpfile" |
+   sed -e 's/u[0-9]* : //' -e 's/ = /@/' | $bindir/getmodsfrommarc "$fname" "$abstract" "$advisorxmlfile" "$language" "$note"  2> /dev/null
