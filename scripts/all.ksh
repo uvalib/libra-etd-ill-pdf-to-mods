@@ -16,7 +16,7 @@ function exit_on_error {
 INPUT_ASSETS=../01_Interlibrary_Ingest
 
 # the default input file
-INPUT_FILE=$INPUT_ASSETS/Ill_Batchload.csv
+INPUT_FILE=$INPUT_ASSETS/Ill_Batchload.csv.converted
 
 # the default output results
 OUTPUT_RESULTS=../results
