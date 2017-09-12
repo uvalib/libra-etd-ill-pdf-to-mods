@@ -52,28 +52,15 @@ create_mods_file () {
     echo '    </originInfo>'
     echo '    <identifier type="local">'"$fname"'</identifier>'
     echo '  </relatedItem>'
-if [[ "${#subjects[@]}" != "0" ]]; then
-    echo '  <subject>'
-    for topic in "${subjects[@]}"
-    do
-    topical=`strip_variable $topic`
-    echo '    <topic>'"$topical"'</topic>' 
-    done
-    echo '  </subject>'
-else
-    echo '  <subject>'
-    echo '    <topic>ILLIngest</topic>'
-    echo '  </subject>'
-fi
-    #echo '  <subject>'
-    #echo '    <topic>JTIngest</topic>'
-#if [[ "${#subjects[@]}" != "0" ]]; then
-    #for topic in "${subjects[@]}"
-    #do
-    #echo '    <topic>'"$topic"'</topic>' 
-    #done
-#fi
-    #echo '  </subject>'
+    if [[ "${#subjects[@]}" != "0" ]]; then
+        echo '  <subject>'
+        for topic in "${subjects[@]}"
+        do
+        topical=`strip_variable $topic`
+        echo '    <topic>'"$topical"'</topic>' 
+        done
+        echo '  </subject>'
+    fi
     if [[ "$note" != "" ]] ; then
         echo '  <note>'"$note"'</note>'
     fi
