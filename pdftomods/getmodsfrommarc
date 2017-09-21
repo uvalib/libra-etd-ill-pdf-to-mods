@@ -91,8 +91,8 @@ IFS='@'
 
 degree_name1=
 degree_name2=
-degree_level=
-degree_level=
+degree_level1=
+degree_level2=
 language=
 doc_type="Unknown Thesis"
 subject_cnt=0
@@ -176,10 +176,10 @@ done
 
     discipline="$degree_discipline"
 
-    if [[ "$degree_level2" != "" ]];  then
-        degree=$degree_level2
-    else
+    if [[ "$degree_level1" != "" ]];  then
         degree=$degree_level1
+    else
+        degree=$degree_level2
     fi
 
     create_mods_file
