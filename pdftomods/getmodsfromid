@@ -13,7 +13,7 @@ advisorxmlfile=$4
 language=$5
 #note="Digitization of this thesis was made possible by a generous grant from the Jefferson Trust, 2015."
 
-tmpfile=$tmpdir/${id}_index_out.txt
+tmpfile=$tmpdir/${fname}_index_out.txt
 
 $bindir/getfromsolr "$solrURL" id:"$id" | $bindir/indextest jeffersontrust.properties | tee "$tmpfile" |
    sed -e 's/u[0-9]* : //' -e 's/ = /@/' | $bindir/getmodsfrommarc "$fname" "$abstract" "$advisorxmlfile" "$language" "$note"  2> /dev/null
