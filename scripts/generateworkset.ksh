@@ -14,11 +14,11 @@ function exit_on_error {
    return
 }
 
-# the default input directory
-INPUT_DIR=results
-
 # the default mapping file
 MAPPING_FILE=01_Interlibrary_Ingest/Ill_Batchload.csv.converted
+
+# the default input directory
+INPUT_DIR=results
 
 # the ruby script to generate the work sets
 GENERATE_SCRIPT=generateworkset/generateworkset.rb
@@ -26,22 +26,22 @@ GENERATE_SCRIPT=generateworkset/generateworkset.rb
 # check argument count
 if [ $# -ne 0 ]; then
    if [ $# -ge 1 ]; then
-      INPUT_DIR=$1
+      MAPPING_FILE=$1
    fi
    if [ $# -ge 2 ]; then
-      MAPPING_FILE=$2
+      INPUT_DIR=$2
    fi
-fi
-
-# check for the existance of the input directory
-if [ ! -d $INPUT_DIR ]; then
-   echo "ERROR: $INPUT_DIR does not exist or is not readable, aborting"
-   exit_on_error 1
 fi
 
 # check for the existance of the mapping file
 if [ ! -f $MAPPING_FILE ]; then
    echo "ERROR: $MAPPING_FILE does not exist or is not readable, aborting"
+   exit_on_error 1
+fi
+
+# check for the existance of the input directory
+if [ ! -d $INPUT_DIR ]; then
+   echo "ERROR: $INPUT_DIR does not exist or is not readable, aborting"
    exit_on_error 1
 fi
 
