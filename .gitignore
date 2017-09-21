@@ -1,5 +1,6 @@
 .idea
 01_Interlibrary_Ingest
+02_Interlibrary_Ingest
 results
 tmp
 pdftomods/*.log
