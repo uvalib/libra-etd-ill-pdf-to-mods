@@ -177,9 +177,9 @@ done
     discipline="$degree_discipline"
 
     if [[ "$degree_level2" != "" ]];  then
-        degree=`echo "$degree_level2" | tr '[:lower:]' '[:upper:]' | sed -e 's/[. ]//g'`
+        degree=$degree_level2
     else
-        degree=`echo "$degree_level1" | tr '[:lower:]' '[:upper:]' | sed -e 's/[. ]//g'`
+        degree=$degree_level1
     fi
 
     create_mods_file
