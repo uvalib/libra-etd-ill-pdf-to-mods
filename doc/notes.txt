@@ -1,8 +1,18 @@
 Generating XML files for ingest into libra-etd
 
 1) Export the spreadsheet enumerating the batch to a CSV file using Excel
-2) Run ./scripts/convert.ksh <CSV file> to convert the format of the CSV for processing
-3) Move to the pdftomods directory
-4) Run ../scripts/all.ksh <batchdir> <converted CSV> to generate all the ingest XML files
-5) Move to root directory
-6) Run ./scripts/generateworkset.ksh <converted CSV> to generate all the ingest worksets
+2) Review the CSV and manually remove any blank lines.
+3) Run ./scripts/convert.ksh <CSV file> to convert the format of the CSV for processing
+4) Move to the pdftomods directory
+5) Run ../scripts/all.ksh <batchdir> <converted CSV> to generate all the ingest XML files
+6) Move to root directory
+7) Run ./scripts/generateworkset.ksh <converted CSV> to generate all the ingest worksets
+
+Note: if the abstract extract is not working, try the following:
+
+1) Move to pdfmods directory
+2) ./gettextfrompdf_poppler -v <pdf file>
+3) Ensure the resulting file actually contains extracted text
+4) If you see an error, try:
+brew upgrade aspell
+brew upgrade poppler
